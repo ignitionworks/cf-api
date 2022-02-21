@@ -8,6 +8,7 @@ class CfApiApplicationTests {
 
 	@Test
 	fun contextLoads() {
+		println("hello")
 	}
 
 }

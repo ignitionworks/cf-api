@@ -23,6 +23,8 @@ dependencies {
 	implementation("org.springframework.session:spring-session-core")
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
 	runtimeOnly("org.postgresql:postgresql")
+	implementation("org.cloudfoundry:cloudfoundry-client-reactor:5.6.0.RELEASE")
+	implementation("org.cloudfoundry:cloudfoundry-operations:5.6.0.RELEASE")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
