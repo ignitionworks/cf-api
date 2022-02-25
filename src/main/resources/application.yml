@@ -1,0 +1,12 @@
+spring:
+  security:
+    oauth2:
+      client:
+        provider:
+          uaa:
+            issuer-uri: https://uaa.cloud.ignition.works/oauth/token
+        registration:
+          uaa:
+            client-id: ${UAA_CLIENT_ID}
+            client-secret: ${UAA_CLIENT_SECTRET}
+            scope: openid,cloud_controller_service_permissions.read,cloud_controller.read,routing.router_groups.read
