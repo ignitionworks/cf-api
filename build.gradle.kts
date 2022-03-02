@@ -19,15 +19,16 @@ repositories {
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter")
 	implementation("org.springframework.boot:spring-boot-starter-web")
-	implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
 	implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 	implementation("org.springframework.session:spring-session-core")
+	implementation("ru.lanwen.wiremock:wiremock-junit5:1.3.1")
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
 	implementation("org.cloudfoundry:cloudfoundry-client-reactor:5.6.0.RELEASE")
 	implementation("org.cloudfoundry:cloudfoundry-operations:5.6.0.RELEASE")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("com.github.tomakehurst:wiremock-jre8:2.32.0")
 }
 
 tasks.withType<KotlinCompile> {
