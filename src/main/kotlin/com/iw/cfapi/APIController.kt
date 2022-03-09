@@ -1,8 +1,8 @@
 package com.iw.cfapi
 
+import org.apache.el.parser.Token
 import org.cloudfoundry.client.v3.applications.ListApplicationsRequest
 import org.cloudfoundry.client.v3.applications.ListApplicationsResponse
-import org.cloudfoundry.client.v3.deployments.GetDeploymentRequest
 import org.cloudfoundry.client.v3.deployments.ListDeploymentsRequest
 import org.cloudfoundry.client.v3.deployments.ListDeploymentsResponse
 import org.cloudfoundry.client.v3.organizations.GetOrganizationRequest
@@ -13,6 +13,7 @@ import org.cloudfoundry.client.v3.spaces.GetSpaceRequest
 import org.cloudfoundry.client.v3.spaces.GetSpaceResponse
 import org.cloudfoundry.reactor.DefaultConnectionContext
 import org.cloudfoundry.reactor.client.ReactorCloudFoundryClient
+import org.cloudfoundry.reactor.tokenprovider.ClientCredentialsGrantTokenProvider
 import org.cloudfoundry.util.PaginationUtils
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestHeader
@@ -86,6 +87,13 @@ class APIController {
                 }
             }
         }
+    }
+
+    @GetMapping("/api/login")
+    fun login(@RequestParam("username") username: String, @RequestParam("password") password: String): Token {
+        
+        val token = ClientCredentialsGrantTokenProvider.builder().clientId(username).clientSecret(password).build()
+        token.getToken()
     }
 
     @GetMapping("/api/routes")
