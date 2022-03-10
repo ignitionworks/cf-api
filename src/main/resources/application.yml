@@ -1,0 +1,21 @@
+spring:
+  security:
+    basic:
+      enabled: false
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://uaa.cloud.ignition.works/oauth/token
+          jwt-set-uri: https://uaa.cloud.ignition.works/token_keys
+
+security:
+  basic:
+    enabled: false
+
+cf:
+  serviceAccount:
+    name: ${cfAccountUsername}
+    password: ${cfAccountPassword}
+  foundations:
+  - api: api.cloud.ignition.works
+    name: main

@@ -1,6 +1,5 @@
 package com.iw.cfapi
 
-import org.apache.el.parser.Token
 import org.cloudfoundry.client.v3.applications.ListApplicationsRequest
 import org.cloudfoundry.client.v3.applications.ListApplicationsResponse
 import org.cloudfoundry.client.v3.deployments.ListDeploymentsRequest
@@ -9,11 +8,10 @@ import org.cloudfoundry.client.v3.organizations.GetOrganizationRequest
 import org.cloudfoundry.client.v3.organizations.GetOrganizationResponse
 import org.cloudfoundry.client.v3.routes.ListRoutesRequest
 import org.cloudfoundry.client.v3.routes.ListRoutesResponse
+import org.cloudfoundry.client.v3.routes.RouteResource
 import org.cloudfoundry.client.v3.spaces.GetSpaceRequest
 import org.cloudfoundry.client.v3.spaces.GetSpaceResponse
-import org.cloudfoundry.reactor.DefaultConnectionContext
 import org.cloudfoundry.reactor.client.ReactorCloudFoundryClient
-import org.cloudfoundry.reactor.tokenprovider.ClientCredentialsGrantTokenProvider
 import org.cloudfoundry.util.PaginationUtils
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestHeader
@@ -25,13 +23,7 @@ import java.net.MalformedURLException
 import java.net.URL
 
 @RestController
-class APIController {
-    fun cfClientBuilder(token: String): ReactorCloudFoundryClient {
-        val connection = DefaultConnectionContext.builder().apiHost("api.cloud.ignition.works").build()
-        val tokenProvider = ExistingTokenProvider(token)
-        return ReactorCloudFoundryClient.builder().connectionContext(connection).tokenProvider(tokenProvider).build()
-    }
-
+class APIController ( private val cfClients: Map<String, ReactorCloudFoundryClient> ) {
     fun hostFor(url: String): String {
         val host = try {
             URL(url).host
@@ -43,29 +35,33 @@ class APIController {
         return host.split(".").first()
     }
 
+    fun apps(appIds: Iterable<String>): Flux<ListApplicationsResponse> {
+        return Flux.merge(cfClients.map { (_, client) -> client.applicationsV3().list(ListApplicationsRequest.builder().applicationIds(appIds).build()) })
+    }
+
+    fun space(spaceId: String): Flux<GetSpaceResponse> {
+        return Flux.merge(cfClients.map{ (_, client) -> client.spacesV3().get(GetSpaceRequest.builder().spaceId(spaceId).build())})
+    }
+
+    fun organisations(orgId: String): Flux<GetOrganizationResponse> {
+        return Flux.merge(cfClients.map { (_, client) -> client.organizationsV3().get(GetOrganizationRequest.builder().organizationId(orgId).build()) })
+    }
+
+    fun deploys(appIds: List<String>): Flux<ListDeploymentsResponse> {
+        return Flux.merge(cfClients.map { (_, client) -> client.deploymentsV3().list(ListDeploymentsRequest.builder().applicationIds(appIds).build()) })
+    }
+
+    fun routes(query: String): Flux<RouteResource> {
+        return Flux.merge(cfClients.map { (_, client) ->
+            PaginationUtils.requestClientV3Resources { page ->
+                client.routesV3().list(ListRoutesRequest.builder().page(page).host(hostFor(query)).build())
+            }
+        })
+    }
+
     @GetMapping("/api/routes/search")
-    fun search(@RequestHeader("Authorization") token: String, @RequestParam("query") query: String): Flux<RouteResult> {
-        val cfClient = cfClientBuilder(token)
-
-        fun apps(appIds: Iterable<String>): Mono<ListApplicationsResponse> {
-            return cfClient.applicationsV3().list(ListApplicationsRequest.builder().applicationIds(appIds).build())
-        }
-
-        fun space(spaceId: String): Mono<GetSpaceResponse> {
-            return cfClient.spacesV3().get(GetSpaceRequest.builder().spaceId(spaceId).build())
-        }
-
-        fun organisations(orgId: String): Mono<GetOrganizationResponse> {
-            return cfClient.organizationsV3().get(GetOrganizationRequest.builder().organizationId(orgId).build())
-        }
-
-        fun deploys(appIds: List<String>): Mono<ListDeploymentsResponse> {
-            return cfClient.deploymentsV3().list(ListDeploymentsRequest.builder().applicationIds(appIds).build())
-        }
-
-        return PaginationUtils.requestClientV3Resources { page ->
-            cfClient.routesV3().list(ListRoutesRequest.builder().page(page).host(hostFor(query)).build())
-        }.flatMap { r ->
+    fun search(@RequestParam("query") query: String): Flux<RouteResult> {
+        return routes(query).flatMap { r ->
             apps(r.destinations.map { it.application.applicationId }).flatMap { a ->
                 deploys(a.resources.map { it.id }).flatMap { d ->
                     space(r.relationships.space.data.id).flatMap { s ->
@@ -83,56 +79,6 @@ class APIController {
                                 deployments = d.resources.map { it.id }
                             )
                         }
-                    }
-                }
-            }
-        }
-    }
-
-    @GetMapping("/api/login")
-    fun login(@RequestParam("username") username: String, @RequestParam("password") password: String): Token {
-        
-        val token = ClientCredentialsGrantTokenProvider.builder().clientId(username).clientSecret(password).build()
-        token.getToken()
-    }
-
-    @GetMapping("/api/routes")
-    fun routes(@RequestHeader("Authorization") token: String): Flux<RouteResult> {
-        val cfClient = cfClientBuilder(token)
-
-        fun space(spaceId: String): Mono<GetSpaceResponse> {
-            return cfClient.spacesV3().get(GetSpaceRequest.builder().spaceId(spaceId).build())
-        }
-
-        fun organisations(orgId: String): Mono<GetOrganizationResponse> {
-            return cfClient.organizationsV3().get(GetOrganizationRequest.builder().organizationId(orgId).build())
-        }
-
-        fun routes(page: Int): Mono<ListRoutesResponse> {
-           return cfClient.routesV3().list(ListRoutesRequest.builder().page(page).build())
-        }
-
-        fun apps(appIds: Iterable<String>): Mono<ListApplicationsResponse> {
-            return cfClient.applicationsV3().list(ListApplicationsRequest.builder().applicationIds(appIds).build())
-        }
-
-        return PaginationUtils.requestClientV3Resources { page ->
-            routes(page)
-        }.flatMap { r ->
-            apps(r.destinations.map { it.application.applicationId }).flatMap { a ->
-                space(r.relationships.space.data.id).flatMap { s ->
-                    organisations(s.relationships.organization.data.id).map { org ->
-                        RouteResult(
-                            name = r.host,
-                            url = r.url,
-                            path = r.path,
-                            routeId = r.id,
-                            spaceName = s.name,
-                            spaceId = s.id,
-                            orgName = org.name,
-                            orgId = org.id,
-                            apps = a.resources.map { it.name }
-                        )
                     }
                 }
             }
