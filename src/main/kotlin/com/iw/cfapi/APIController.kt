@@ -7,18 +7,15 @@ import org.cloudfoundry.client.v3.deployments.ListDeploymentsResponse
 import org.cloudfoundry.client.v3.organizations.GetOrganizationRequest
 import org.cloudfoundry.client.v3.organizations.GetOrganizationResponse
 import org.cloudfoundry.client.v3.routes.ListRoutesRequest
-import org.cloudfoundry.client.v3.routes.ListRoutesResponse
 import org.cloudfoundry.client.v3.routes.RouteResource
 import org.cloudfoundry.client.v3.spaces.GetSpaceRequest
 import org.cloudfoundry.client.v3.spaces.GetSpaceResponse
 import org.cloudfoundry.reactor.client.ReactorCloudFoundryClient
 import org.cloudfoundry.util.PaginationUtils
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
 import java.net.MalformedURLException
 import java.net.URL
 

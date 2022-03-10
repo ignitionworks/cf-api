@@ -2,13 +2,11 @@ package com.iw.cfapi
 
 import org.cloudfoundry.reactor.DefaultConnectionContext
 import org.cloudfoundry.reactor.client.ReactorCloudFoundryClient
-import org.cloudfoundry.reactor.tokenprovider.ClientCredentialsGrantTokenProvider
 import org.cloudfoundry.reactor.tokenprovider.PasswordGrantTokenProvider
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import reactor.core.publisher.Flux
 
 data class FoundationConfig(
     val api: String,
